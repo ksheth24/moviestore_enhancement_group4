@@ -1,0 +1,168 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header Section -->
+    <div class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">{{ template_data.title }}</h1>
+                    <p class="mb-0">Discover the most popular movies in {{ template_data.region_name }}</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <a href="{% url 'movies.map' %}" class="btn btn-outline-light btn-sm">
+                            <i class="fas fa-map me-1"></i> Back to Map
+                        </a>
+                        <a href="{% url 'movies.index' %}" class="btn btn-primary btn-sm">
+                            <i class="fas fa-film me-1"></i> All Movies
+                        </a>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Region Statistics -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-chart-bar me-2"></i>
+                            {{ template_data.region_name }} Statistics
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        <div class="row text-center">
+                            <div class="col-md-4">
+                                <h3 class="text-primary">{{ template_data.region_stats.total_orders|default:0 }}</h3>
+                                <p class="text-muted mb-0">Total Orders</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h3 class="text-success">{{ template_data.region_stats.total_items|default:0 }}</h3>
+                                <p class="text-muted mb-0">Total Items Sold</p>
+                            </div>
+                            <div class="col-md-4">
+                                <h3 class="text-info">{{ template_data.trending_movies|length }}</h3>
+                                <p class="text-muted mb-0">Different Movies</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Popular Movies List -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header">
+                        <h5 class="mb-0">
+                            <i class="fas fa-star me-2"></i>
+                            Most Popular Movies in {{ template_data.region_name }}
+                        </h5>
+                    </div>
+                    <div class="card-body">
+                        {% if template_data.trending_movies %}
+                            <div class="row">
+                                {% for movie in template_data.trending_movies %}
+                                <div class="col-lg-6 col-xl-4 mb-4">
+                                    <div class="card h-100 shadow-sm">
+                                        <div class="row g-0">
+                                            <div class="col-md-4">
+                                                {% if movie.movie__image %}
+                                                    <img src="{{ movie.movie__image.url }}" class="img-fluid rounded-start h-100" 
+                                                         style="object-fit: cover; width: 100%;" alt="{{ movie.movie__name }}">
+                                                {% else %}
+                                                    <div class="bg-light d-flex align-items-center justify-content-center h-100">
+                                                        <i class="fas fa-film fa-3x text-muted"></i>
+                                                    </div>
+                                                {% endif %}
+                                            </div>
+                                            <div class="col-md-8">
+                                                <div class="card-body">
+                                                    <h6 class="card-title">{{ forloop.counter }}. {{ movie.movie__name }}</h6>
+                                                    <p class="card-text text-muted small">{{ movie.movie__description|truncatewords:15 }}</p>
+                                                    <div class="d-flex justify-content-between align-items-center">
+                                                        <div>
+                                                            <small class="text-success">
+                                                                <i class="fas fa-shopping-cart me-1"></i>
+                                                                {{ movie.total_quantity }} sold
+                                                            </small>
+                                                            <br>
+                                                            <small class="text-info">
+                                                                <i class="fas fa-receipt me-1"></i>
+                                                                {{ movie.order_count }} orders
+                                                            </small>
+                                                        </div>
+                                                        <div class="text-end">
+                                                            <span class="badge bg-primary">${{ movie.movie__price|floatformat:2 }}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div class="mt-2">
+                                                        <a href="{% url 'movies.show' id=movie.movie_id %}" 
+                                                           class="btn btn-sm btn-outline-primary">
+                                                            View Details
+                                                        </a>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+                                {% endfor %}
+                            </div>
+                        {% else %}
+                            <div class="text-center py-5">
+                                <i class="fas fa-film fa-3x text-muted mb-3"></i>
+                                <h5 class="text-muted">No movie data available for {{ template_data.region_name }}</h5>
+                                <p class="text-muted">This region doesn't have any movie purchase data yet.</p>
+                                <a href="{% url 'movies.map' %}" class="btn btn-primary">
+                                    <i class="fas fa-map me-1"></i> Back to Map
+                                </a>
+                            </div>
+                        {% endif %}
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Back to Map Section -->
+    <div class="container mt-4 mb-5">
+        <div class="row">
+            <div class="col-12 text-center">
+                <a href="{% url 'movies.map' %}" class="btn btn-outline-secondary btn-lg">
+                    <i class="fas fa-map me-2"></i>
+                    Explore Other Regions
+                </a>
+            </div>
+        </div>
+    </div>
+</div>
+
+
+<style>
+    .card {
+        transition: transform 0.2s ease-in-out;
+    }
+    
+    .card:hover {
+        transform: translateY(-2px);
+    }
+    
+    .shadow-sm {
+        box-shadow: 0 0.125rem 0.25rem rgba(0, 0, 0, 0.075) !important;
+    }
+    
+    .card:hover .shadow-sm {
+        box-shadow: 0 0.5rem 1rem rgba(0, 0, 0, 0.15) !important;
+    }
+</style>
+{% endblock content %}

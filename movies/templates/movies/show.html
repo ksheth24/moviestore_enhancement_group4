@@ -1,0 +1,299 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+<div class="p-3">
+  <div class="container">
+    <div class="row mt-3">
+      <div class="col-md-6 mx-auto mb-3">
+        <h2>{{ template_data.movie.name }}</h2>
+        <hr />
+        <p><b>Description:</b> {{ template_data.movie.description }}</p>
+        <p><b>Price:</b> ${{ template_data.movie.price }}</p>
+        
+        <!-- Rating Section -->
+        {% if user.is_authenticated %}
+        <div class="rating-section mb-4">
+          <h5>Rate this movie:</h5>
+          <div class="rating-container">
+            <div class="star-rating" data-movie-id="{{ template_data.movie.id }}">
+              <span class="star" data-rating="1">★</span>
+              <span class="star" data-rating="2">★</span>
+              <span class="star" data-rating="3">★</span>
+              <span class="star" data-rating="4">★</span>
+              <span class="star" data-rating="5">★</span>
+            </div>
+            <div class="rating-info mt-2">
+              <span id="user-rating-display" class="text-muted"></span>
+              <span id="average-rating-display" class="text-muted ms-3"></span>
+            </div>
+          </div>
+        </div>
+        {% else %}
+        <div class="rating-section mb-4">
+          <div class="alert alert-info">
+            <h5>Movie Ratings</h5>
+            <p class="mb-2">Please <a href="{% url 'accounts.login' %}">log in</a> to rate this movie.</p>
+            <div class="rating-info">
+              <span id="average-rating-display" class="text-muted"></span>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+        <p class="card-text">
+          <form method="post"
+            action="{% url 'cart.add' id=template_data.movie.id %}">
+            <div class="row">
+              {% csrf_token %}
+              <div class="col-auto">
+                <div class="input-group col-auto">
+                  <div class="input-group-text">Quantity</div>
+                  <input type="number" min="1" max="10"
+                    class="form-control quantity-input"
+                    name="quantity" value="1">
+                </div>
+              </div>
+              <div class="col-auto">
+                <div class="input-group col-auto">
+                  <div class="input-group-text">Region</div>
+                  <select class="form-select" name="region_code" required>
+                    <option value="">Select region...</option>
+                    <option value="US">United States</option>
+                    <option value="CA">Canada</option>
+                    <option value="GB">United Kingdom</option>
+                    <option value="DE">Germany</option>
+                    <option value="FR">France</option>
+                    <option value="JP">Japan</option>
+                    <option value="AU">Australia</option>
+                    <option value="BR">Brazil</option>
+                    <option value="IN">India</option>
+                    <option value="CN">China</option>
+                    <option value="RU">Russia</option>
+                    <option value="MX">Mexico</option>
+                    <option value="IT">Italy</option>
+                    <option value="ES">Spain</option>
+                    <option value="KR">South Korea</option>
+                  </select>
+                </div>
+              </div>
+              <div class="col-auto">
+                <button class="btn bg-dark text-white"
+                  type="submit">Add to cart</button>
+              </div>
+            </div>
+          </form>
+        </p>
+        <h2>Reviews</h2>
+        <hr />
+        <ul class="list-group">
+          {% for review in template_data.reviews %}
+          <li class="list-group-item pb-3 pt-3">
+            <h5 class="card-title">
+              Review by {{ review.user.username }}
+            </h5>
+            <h6 class="card-subtitle mb-2 text-muted">
+              {{ review.date }}
+            </h6>
+            <p class="card-text">{{ review.comment }}</p>
+            {% if user.is_authenticated and user == review.user %}
+            <a class="btn btn-primary"
+              href="{% url 'movies.edit_review' id=template_data.movie.id review_id=review.id %}">Edit
+            </a>
+            <a class="btn btn-danger"
+              href="{% url 'movies.delete_review' id=template_data.movie.id review_id=review.id %}">Delete
+            </a>
+            {% endif %}
+          </li>
+          {% endfor %}
+        </ul>
+        {% if user.is_authenticated %}
+        <div class="container mt-4">
+          <div class="row justify-content-center">
+            <div class="col-12">
+              <div class="card shadow p-3 mb-4 rounded">
+                <div class="card-body">
+                  <b class="text-start">Create a review
+                    </b><br /><br />
+                  <form method="POST" action="{% url 'movies.create_review' id=template_data.movie.id %}">
+                    {% csrf_token %}
+                    <p>
+                      <label for="comment">Comment:</label>
+                      <textarea name="comment" required
+                      class="form-control"
+                      id="comment"></textarea>
+                    </p>
+                    <div class="text-center">
+                      <button type="submit"
+                        class="btn bg-dark text-white">
+                        Add Review
+                      </button>
+                    </div>
+                  </form>
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+        {% endif %}
+      </div>
+      <div class="col-md-6 mx-auto mb-3 text-center">
+        <img src="{{ template_data.movie.image.url }}"
+          class="rounded img-card-400" />
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Rating JavaScript -->
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    const movieId = {{ template_data.movie.id }};
+    const starRating = document.querySelector('.star-rating');
+    const stars = document.querySelectorAll('.star');
+    const userRatingDisplay = document.getElementById('user-rating-display');
+    const averageRatingDisplay = document.getElementById('average-rating-display');
+    
+    // Load initial rating data
+    loadRatingData();
+    
+    // Add click handlers to stars (only if user is authenticated)
+    if (starRating) {
+        stars.forEach(star => {
+            star.addEventListener('click', function() {
+                const rating = parseInt(this.dataset.rating);
+                submitRating(rating);
+            });
+            
+            star.addEventListener('mouseenter', function() {
+                const rating = parseInt(this.dataset.rating);
+                highlightStars(rating);
+            });
+        });
+        
+        starRating.addEventListener('mouseleave', function() {
+            const currentRating = getCurrentUserRating();
+            if (currentRating) {
+                highlightStars(currentRating);
+            } else {
+                clearStars();
+            }
+        });
+    }
+    
+    function loadRatingData() {
+        fetch(`/movies/api/movies/${movieId}/rating/`)
+            .then(response => response.json())
+            .then(data => {
+                if (data.user_rating && userRatingDisplay) {
+                    highlightStars(data.user_rating);
+                    userRatingDisplay.textContent = `Your rating: ${data.user_rating}/5`;
+                } else if (userRatingDisplay) {
+                    userRatingDisplay.textContent = 'Click a star to rate';
+                }
+                
+                if (data.total_ratings > 0) {
+                    averageRatingDisplay.textContent = `Average: ${data.average_rating}/5 (${data.total_ratings} ratings)`;
+                } else {
+                    averageRatingDisplay.textContent = 'No ratings yet';
+                }
+            })
+            .catch(error => {
+                console.error('Error loading rating data:', error);
+            });
+    }
+    
+    function submitRating(rating) {
+        fetch('/movies/api/ratings/', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': getCookie('csrftoken')
+            },
+            body: JSON.stringify({
+                movie_id: movieId,
+                stars: rating
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status) {
+                userRatingDisplay.textContent = `Your rating: ${data.user_rating}/5`;
+                averageRatingDisplay.textContent = `Average: ${data.average_rating}/5 (${data.total_ratings} ratings)`;
+                highlightStars(data.user_rating);
+            }
+        })
+        .catch(error => {
+            console.error('Error submitting rating:', error);
+            alert('Error submitting rating. Please try again.');
+        });
+    }
+    
+    function highlightStars(rating) {
+        stars.forEach((star, index) => {
+            if (index < rating) {
+                star.classList.add('active');
+            } else {
+                star.classList.remove('active');
+            }
+        });
+    }
+    
+    function clearStars() {
+        stars.forEach(star => {
+            star.classList.remove('active');
+        });
+    }
+    
+    function getCurrentUserRating() {
+        const activeStars = document.querySelectorAll('.star.active');
+        return activeStars.length;
+    }
+    
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+});
+</script>
+
+<!-- Rating CSS -->
+<style>
+.star-rating {
+    display: inline-block;
+    font-size: 2rem;
+    cursor: pointer;
+}
+
+.star {
+    color: #ddd;
+    transition: color 0.2s;
+    margin-right: 2px;
+}
+
+.star:hover,
+.star.active {
+    color: #ffc107;
+}
+
+.rating-section {
+    background-color: #f8f9fa;
+    padding: 15px;
+    border-radius: 8px;
+    border: 1px solid #dee2e6;
+}
+
+.rating-info {
+    font-size: 0.9rem;
+}
+</style>
+
+{% endblock content %}

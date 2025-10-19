@@ -1,0 +1,9 @@
+Todo for Job Seeker Profile feature:
+1. Add Profile model to accounts.models
+2. Add ProfileForm to accounts.forms
+3. Add views for create/edit and detail in accounts.views
+4. Add URL routes in accounts.urls
+5. Register Profile in accounts.admin
+6. Add templates: profile_form.html, profile_detail.html
+7. Add migration accounts/migrations/0001_create_profile.py
+8. Smoke check for syntax errors

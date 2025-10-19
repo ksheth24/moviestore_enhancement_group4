@@ -1,0 +1,13 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{{ template_data.title }}</h1>
+{% if profile %}
+    <h2>{{ profile.headline }}</h2>
+    <p><strong>Skills:</strong> {{ profile.skills }}</p>
+    <p><strong>Education:</strong><br/>{{ profile.education|linebreaks }}</p>
+    <p><strong>Experience:</strong><br/>{{ profile.experience|linebreaks }}</p>
+    <p><strong>Links:</strong><br/>{{ profile.links|linebreaks }}</p>
+{% else %}
+    <p>This user has not created a profile yet.</p>
+{% endif %}
+{% endblock %}

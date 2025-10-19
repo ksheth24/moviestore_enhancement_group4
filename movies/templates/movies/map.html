@@ -1,0 +1,282 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block content %}
+<div class="container-fluid p-0">
+    <!-- Header Section -->
+    <div class="bg-dark text-white py-4">
+        <div class="container">
+            <div class="row align-items-center">
+                <div class="col-md-8">
+                    <h1 class="mb-2">{{ template_data.title }}</h1>
+                    <p class="mb-0">Discover which movies are most popular in different regions around the world</p>
+                </div>
+                <div class="col-md-4 text-end">
+                    <div class="d-flex justify-content-end gap-2">
+                        <button class="btn btn-outline-light btn-sm" id="refreshData">
+                            <i class="fas fa-sync-alt me-1"></i> Refresh Data
+                        </button>
+                        <button class="btn btn-primary btn-sm" id="toggleLegend">
+                            <i class="fas fa-info-circle me-1"></i> Show Legend
+                        </button>
+                        <a href="/movies/popular/GB/" class="btn btn-success btn-sm">
+                            <i class="fas fa-test-tube me-1"></i> Test GB Movies
+                        </a>
+                        <button class="btn btn-warning btn-sm" onclick="testMap()">
+                            <i class="fas fa-bug me-1"></i> Test Map
+                        </button>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Map Container -->
+    <div class="row g-0">
+        <div class="col-12">
+            <div id="map" style="height: 70vh; width: 100%;"></div>
+        </div>
+    </div>
+
+    <!-- Instructions -->
+    <div class="container mt-4">
+        <div class="row">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-body text-center">
+                        <h5 class="card-title">
+                            <i class="fas fa-map-marked-alt me-2"></i>
+                            How to Use the Map
+                        </h5>
+                        <p class="card-text">
+                            Click on any colored marker to see region details and view the most popular movies in that area.
+                        </p>
+                        <div class="row mt-3">
+                            <div class="col-md-3">
+                                <span class="badge bg-danger me-2" style="width: 20px; height: 20px; display: inline-block;"></span>
+                                <small>High Activity (100+ orders)</small>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-warning me-2" style="width: 20px; height: 20px; display: inline-block;"></span>
+                                <small>Medium Activity (50-99 orders)</small>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-success me-2" style="width: 20px; height: 20px; display: inline-block;"></span>
+                                <small>Low Activity (1-49 orders)</small>
+                            </div>
+                            <div class="col-md-3">
+                                <span class="badge bg-secondary me-2" style="width: 20px; height: 20px; display: inline-block;"></span>
+                                <small>No Data</small>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Loading Spinner -->
+<div id="loadingSpinner" class="position-fixed top-50 start-50 translate-middle" style="z-index: 9999; display: none;">
+    <div class="spinner-border text-primary" role="status">
+        <span class="visually-hidden">Loading...</span>
+    </div>
+</div>
+
+<!-- Leaflet CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+
+<!-- Leaflet JavaScript -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+<style>
+    .legend-item {
+        display: flex;
+        align-items: center;
+    }
+    
+    .movie-item {
+        border-left: 4px solid #007bff;
+        padding-left: 10px;
+        margin-bottom: 8px;
+    }
+    
+    .movie-item:hover {
+        background-color: #f8f9fa;
+        cursor: pointer;
+    }
+    
+    .region-popup {
+        min-width: 250px;
+    }
+    
+    .region-popup h6 {
+        color: #007bff;
+        margin-bottom: 10px;
+    }
+    
+    .movie-stats {
+        font-size: 0.9em;
+        color: #6c757d;
+    }
+</style>
+
+<script>
+document.addEventListener('DOMContentLoaded', function() {
+    // Initialize map
+    const map = L.map('map').setView([20, 0], 2);
+    
+    // Add tile layer
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '© OpenStreetMap contributors'
+    }).addTo(map);
+    
+    // Region coordinates mapping (simplified for demo)
+    const regionCoordinates = {
+        'US': [39.8283, -98.5795],
+        'CA': [56.1304, -106.3468],
+        'GB': [55.3781, -3.4360],
+        'DE': [51.1657, 10.4515],
+        'FR': [46.2276, 2.2137],
+        'JP': [36.2048, 138.2529],
+        'AU': [-25.2744, 133.7751],
+        'BR': [-14.2350, -51.9253],
+        'IN': [20.5937, 78.9629],
+        'CN': [35.8617, 104.1954],
+        'RU': [61.5240, 105.3188],
+        'MX': [23.6345, -102.5528],
+        'IT': [41.8719, 12.5674],
+        'ES': [40.4637, -3.7492],
+        'KR': [35.9078, 127.7669],
+        'UNKNOWN': [0, 0]
+    };
+    
+    // Region names mapping
+    const regionNames = {
+        'US': 'United States',
+        'CA': 'Canada',
+        'GB': 'United Kingdom',
+        'DE': 'Germany',
+        'FR': 'France',
+        'JP': 'Japan',
+        'AU': 'Australia',
+        'BR': 'Brazil',
+        'IN': 'India',
+        'CN': 'China',
+        'RU': 'Russia',
+        'MX': 'Mexico',
+        'IT': 'Italy',
+        'ES': 'Spain',
+        'KR': 'South Korea',
+        'UNKNOWN': 'Unknown Region'
+    };
+    
+    let regionMarkers = {};
+    let currentData = null;
+    
+    // Show loading spinner
+    function showLoading() {
+        document.getElementById('loadingSpinner').style.display = 'block';
+    }
+    
+    // Hide loading spinner
+    function hideLoading() {
+        document.getElementById('loadingSpinner').style.display = 'none';
+    }
+    
+    // Get marker color based on order count
+    function getMarkerColor(orderCount) {
+        if (orderCount >= 100) return 'red';
+        if (orderCount >= 50) return 'orange';
+        if (orderCount >= 1) return 'green';
+        return 'gray';
+    }
+    
+    // Create custom icon
+    function createCustomIcon(color) {
+        return L.divIcon({
+            className: 'custom-div-icon',
+            html: `<div style="background-color: ${color}; width: 20px; height: 20px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.3);"></div>`,
+            iconSize: [20, 20],
+            iconAnchor: [10, 10]
+        });
+    }
+    
+    // Load regions data
+    async function loadRegionsData() {
+        showLoading();
+        try {
+            const response = await fetch('/api/regions/');
+            const data = await response.json();
+            currentData = data;
+            updateMap(data);
+        } catch (error) {
+            console.error('Error loading regions data:', error);
+            alert('Error loading regions data. Please try again.');
+        } finally {
+            hideLoading();
+        }
+    }
+    
+    // Update map with region data
+    function updateMap(data) {
+        // Clear existing markers
+        Object.values(regionMarkers).forEach(marker => map.removeLayer(marker));
+        regionMarkers = {};
+        
+        data.regions.forEach(region => {
+            const regionCode = region.region_code;
+            const orderCount = region.order_count;
+            const totalItems = region.total_items;
+            
+            if (regionCode in regionCoordinates) {
+                const coords = regionCoordinates[regionCode];
+                const color = getMarkerColor(orderCount);
+                const icon = createCustomIcon(color);
+                
+                const marker = L.marker(coords, { icon: icon })
+                    .addTo(map)
+                    .bindPopup(`
+                        <div class="region-popup">
+                            <h6>${regionNames[regionCode] || regionCode}</h6>
+                            <p class="mb-1"><strong>Orders:</strong> ${orderCount}</p>
+                            <p class="mb-1"><strong>Total Items:</strong> ${totalItems}</p>
+                            <a href="/movies/popular/${regionCode}/" class="btn btn-sm btn-primary">
+                                View Popular Movies
+                            </a>
+                        </div>
+                    `);
+                
+                regionMarkers[regionCode] = marker;
+            }
+        });
+    }
+    
+    // Simple function to show region info (no longer needed for movies display)
+    window.showRegionInfo = function(regionCode) {
+        console.log('Region selected:', regionCode);
+        // This function is kept for any future use but movies are now shown on separate page
+    };
+    
+    // Event listeners
+    document.getElementById('refreshData').addEventListener('click', loadRegionsData);
+    
+    // Toggle legend visibility
+    document.getElementById('toggleLegend').addEventListener('click', function() {
+        const legendCard = document.querySelector('.col-md-4 .card');
+        legendCard.style.display = legendCard.style.display === 'none' ? 'block' : 'none';
+    });
+    
+    // Test function to verify map is working
+    window.testMap = function() {
+        console.log('Testing map functionality...');
+        console.log('Map object:', map);
+        console.log('Region markers:', Object.keys(regionMarkers));
+        alert('Map is working! Click on any marker to view popular movies for that region.');
+    };
+    
+    // Load initial data
+    loadRegionsData();
+});
+</script>
+{% endblock content %}

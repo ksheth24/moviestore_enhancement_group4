@@ -1,0 +1,99 @@
+{% extends 'base.html' %}
+{% block content %}
+{% load static %}
+{% load cart_filters %}
+<div class="p-3">
+  <div class="container">
+    <div class="row mt-3">
+      <div class="col mx-auto mb-3">
+        <h2>Shopping Cart</h2>
+        <hr />
+      </div>
+    </div>
+    <div class="row m-1">
+      <table class="table table-bordered table-striped
+        text-center">
+        <thead>
+          <tr>
+            <th scope="col">ID</th>
+            <th scope="col">Name</th>
+            <th scope="col">Price</th>
+            <th scope="col">Quantity</th>
+          </tr>
+        </thead>
+        <tbody>
+          {% for movie in template_data.movies_in_cart %}
+          <tr>
+            <td>{{ movie.id }}</td>
+            <td>{{ movie.name }}</td>
+            <td>${{ movie.price }}</td>
+            <td>{{request.session.cart|get_quantity:movie.id }}
+            </td>
+          </tr>
+          {% endfor %}
+        </tbody>
+      </table>
+    </div>
+    {% if template_data.movies_in_cart|length > 0 %}
+    <div class="row mb-3">
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Select Your Region</h5>
+          </div>
+          <div class="card-body">
+            <form method="POST" action="{% url 'cart.purchase' %}">
+              {% csrf_token %}
+              <div class="mb-3">
+                <label for="region_code" class="form-label">Where are you located?</label>
+                <select class="form-select" id="region_code" name="region_code" required>
+                  <option value="">Select your region...</option>
+                  <option value="US" {% if request.session.region_code == 'US' %}selected{% endif %}>United States</option>
+                  <option value="CA" {% if request.session.region_code == 'CA' %}selected{% endif %}>Canada</option>
+                  <option value="GB" {% if request.session.region_code == 'GB' %}selected{% endif %}>United Kingdom</option>
+                  <option value="DE" {% if request.session.region_code == 'DE' %}selected{% endif %}>Germany</option>
+                  <option value="FR" {% if request.session.region_code == 'FR' %}selected{% endif %}>France</option>
+                  <option value="JP" {% if request.session.region_code == 'JP' %}selected{% endif %}>Japan</option>
+                  <option value="AU" {% if request.session.region_code == 'AU' %}selected{% endif %}>Australia</option>
+                  <option value="BR" {% if request.session.region_code == 'BR' %}selected{% endif %}>Brazil</option>
+                  <option value="IN" {% if request.session.region_code == 'IN' %}selected{% endif %}>India</option>
+                  <option value="CN" {% if request.session.region_code == 'CN' %}selected{% endif %}>China</option>
+                  <option value="RU" {% if request.session.region_code == 'RU' %}selected{% endif %}>Russia</option>
+                  <option value="MX" {% if request.session.region_code == 'MX' %}selected{% endif %}>Mexico</option>
+                  <option value="IT" {% if request.session.region_code == 'IT' %}selected{% endif %}>Italy</option>
+                  <option value="ES" {% if request.session.region_code == 'ES' %}selected{% endif %}>Spain</option>
+                  <option value="KR" {% if request.session.region_code == 'KR' %}selected{% endif %}>South Korea</option>
+                </select>
+              </div>
+              <button type="submit" class="btn bg-dark text-white">
+                <i class="fas fa-shopping-cart me-2"></i>Complete Purchase
+              </button>
+            </form>
+          </div>
+        </div>
+      </div>
+      <div class="col-md-6">
+        <div class="card">
+          <div class="card-header">
+            <h5 class="mb-0">Order Summary</h5>
+          </div>
+          <div class="card-body">
+            <p><strong>Total to pay:</strong> ${{ template_data.cart_total }}</p>
+            <p class="text-muted small">Select your region above to complete the purchase.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+    <div class="row">
+      <div class="text-end">
+        <a href="{% url 'cart.clear' %}">
+          <button class="btn btn-danger mb-2">
+            <i class="fas fa-trash me-2"></i>Remove all movies from Cart
+          </button>
+        </a>
+      </div>
+    </div>
+    {% endif %}
+  </div>
+</div>
+{% endblock content %}

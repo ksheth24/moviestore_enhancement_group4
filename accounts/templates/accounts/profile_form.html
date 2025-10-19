@@ -1,0 +1,48 @@
+{% extends 'base.html' %}
+{% block content %}
+<h1>{{ template_data.title }}</h1>
+<form method="post" enctype="multipart/form-data">
+    {% csrf_token %}
+    <h3>Basic</h3>
+    {{ template_data.form.as_p }}
+
+    <h3>Resume</h3>
+    {% if template_data.resume_form %}
+        {{ template_data.resume_form.as_p }}
+    {% endif %}
+
+    <h3>Skills</h3>
+    {% if template_data.skill_formset %}
+        {{ template_data.skill_formset.management_form }}
+        {% for f in template_data.skill_formset.forms %}
+            <div class="form-row">{{ f.as_p }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <h3>Links</h3>
+    {% if template_data.link_formset %}
+        {{ template_data.link_formset.management_form }}
+        {% for f in template_data.link_formset.forms %}
+            <div class="form-row">{{ f.as_p }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <h3>Experience</h3>
+    {% if template_data.exp_formset %}
+        {{ template_data.exp_formset.management_form }}
+        {% for f in template_data.exp_formset.forms %}
+            <div class="form-row">{{ f.as_p }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <h3>Education</h3>
+    {% if template_data.edu_formset %}
+        {{ template_data.edu_formset.management_form }}
+        {% for f in template_data.edu_formset.forms %}
+            <div class="form-row">{{ f.as_p }}</div>
+        {% endfor %}
+    {% endif %}
+
+    <button class="btn btn-primary" type="submit">Save</button>
+</form>
+{% endblock %}
